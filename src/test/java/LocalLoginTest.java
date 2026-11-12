@@ -1,7 +1,9 @@
 import java.io.File;
+import java.time.Duration;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -12,9 +14,16 @@ public class LocalLoginTest {
 
     @BeforeMethod
     public void setUp() {
-        driver = new ChromeDriver();
-        driver.manage().window().maximize();
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--headless=new");          // Required for GitHub Actions Linux runner
+        options.addArguments("--no-sandbox");            // Bypasses OS security model in CI containers
+        options.addArguments("--disable-dev-shm-usage"); // Prevents /dev/shm memory crashes on Linux
+        options.addArguments("--window-size=1920,1080"); // Replaces .maximize() for headless mode
 
+        driver = new ChromeDriver(options);
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
+
+        // Verify this matches your folder name ("webpage/login.html" or "webage/login.html")
         String page = new File("webpage/login.html")
                 .getAbsoluteFile()
                 .toURI()
@@ -47,9 +56,8 @@ public class LocalLoginTest {
 
     @Test
     public void checkBackgroundColor() {
-        String bgColor =
-            driver.findElement(By.id("loginBox"))
-                  .getCssValue("background-color");
+        String bgColor = driver.findElement(By.id("loginBox"))
+                               .getCssValue("background-color");
 
         System.out.println("Background Color: " + bgColor);
         Assert.assertEquals(bgColor, "rgba(173, 216, 230, 1)");
@@ -57,6 +65,8 @@ public class LocalLoginTest {
 
     @AfterMethod
     public void tearDown() {
-        driver.quit();
+        if (driver != null) {
+            driver.quit();
+        }
     }
 }
